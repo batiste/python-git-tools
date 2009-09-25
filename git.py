@@ -74,7 +74,7 @@ if sys.argv[1] == 'new_package':
         print "Regexp %s didn't match anything in file %s" % (version, filename)
         exit(0)
     minor_version_number = int(search_result.group(3)) + 1
-    new_version = 'VERSION = (%d , %d, %d)' % (
+    new_version = 'VERSION = (%d, %d, %d)' % (
         int(search_result.group(1)),
         int(search_result.group(2)),
         minor_version_number
@@ -84,7 +84,9 @@ if sys.argv[1] == 'new_package':
     fh.write(new_content)
     fh.close()
     print "Version number increased; commit changes"
-    commit_cmd = "cd %s; git commit -a -m \"New %s\"; git push; cd .." % (app, new_version.lower())
+    commit_cmd = "cd %s; git commit -a -m \"New %s\"; git tag %s; git push; cd .." % (
+        app, new_version.lower(), new_version.lower(),
+    )
     os.system(commit_cmd)
     print "Upload the new package"
     upload_cmd = "cd %s; python setup.py sdist upload -r chishop; cd .." % (app)
