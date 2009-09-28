@@ -84,7 +84,7 @@ if sys.argv[1] == 'new_package':
     fh.write(new_content)
     fh.close()
     print "Version number increased; commit changes"
-    commit_cmd = "cd %s; git commit -a -m \"New %s\"; git tag %s; git push; cd .." % (
+    commit_cmd = "cd %s; git commit -a -m \"New %s\"; git tag \"%s\"; git push; cd .." % (
         app, new_version.lower(), new_version.lower(),
     )
     os.system(commit_cmd)
