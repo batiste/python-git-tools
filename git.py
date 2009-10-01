@@ -51,13 +51,11 @@ if sys.argv[1] == 'diff':
             os.system(commit_cmd % (dirname))
 
 if sys.argv[1] == 'list_repos':
-    for dirname in glob.glob('*'):
-        filename = os.path.join(dirname, '.git/config')
-        if os.path.exists(filename):
-            fh = open(filename, 'r')
-            for line in fh:
-                if line.strip().startswith('url'):
-                    print line.split('=')[1].strip()
+    for filename in glob.glob('*/.git/config'):
+        fh = open(filename, 'r')
+        for line in fh:
+            if line.strip().startswith('url'):
+                print line.split('=')[1].strip()
 
 if sys.argv[1] == 'new_package':
     import re
