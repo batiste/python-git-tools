@@ -3,7 +3,7 @@
 import glob
 import sys
 import os
-syntax = """Syntax python git.py [commit|push|pull|status|new_package|list_repos] \"[your message|package name]\""""
+syntax = """Syntax: python git.py [commit|push|pull|status|new_package|list_repos] \"[your message|package name]\""""
 
 if len(sys.argv) < 2 or len(sys.argv) > 3:
     print syntax
@@ -57,7 +57,7 @@ if sys.argv[1] == 'list_repos':
             fh = open(filename, 'r')
             for line in fh:
                 if line.strip().startswith('url'):
-                    print line.strip().split('=')[1]
+                    print line.split('=')[1].strip()
 
 if sys.argv[1] == 'new_package':
     import re
