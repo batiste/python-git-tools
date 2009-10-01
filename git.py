@@ -3,13 +3,13 @@
 import glob
 import sys
 import os
-syntax = """Syntax python git.py [commit|push|pull|status|new_package] \"[your message|package name]\""""
+syntax = """Syntax python git.py [commit|push|pull|status|new_package|list_repos] \"[your message|package name]\""""
 
 if len(sys.argv) < 2 or len(sys.argv) > 3:
     print syntax
     exit(0)
 
-if sys.argv[1] not in ("commit", "push", "pull", "status", "diff"):
+if sys.argv[1] not in ("commit", "push", "pull", "status", "diff", "list_repos", "new_package"):
     print syntax
 
 dir_msg = "--- In directory : %s"
@@ -50,13 +50,14 @@ if sys.argv[1] == 'diff':
             print dir_msg % dirname
             os.system(commit_cmd % (dirname))
 
-if sys.argv[1] == 'lislist_gitt':
-    commit_cmd = "cd %s; git diff; cd .. "
+if sys.argv[1] == 'list_repos':
     for dirname in glob.glob('*'):
-        if dirname.find('.') == -1:
-            print dir_msg % dirname
-            os.system(commit_cmd % (dirname))
-
+        filename = os.path.join(dirname, '.git/config')
+        if os.path.exists(filename):
+            fh = open(filename, 'r')
+            for line in fh:
+                if line.strip().startswith('url'):
+                    print line.strip().split('=')[1]
 
 if sys.argv[1] == 'new_package':
     import re
