@@ -50,6 +50,13 @@ if sys.argv[1] == 'diff':
             print dir_msg % dirname
             os.system(commit_cmd % (dirname))
 
+if sys.argv[1] == 'lislist_gitt':
+    commit_cmd = "cd %s; git diff; cd .. "
+    for dirname in glob.glob('*'):
+        if dirname.find('.') == -1:
+            print dir_msg % dirname
+            os.system(commit_cmd % (dirname))
+
 
 if sys.argv[1] == 'new_package':
     import re
