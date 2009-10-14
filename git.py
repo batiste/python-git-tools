@@ -62,14 +62,15 @@ if sys.argv[1] == 'new_package':
     app = sys.argv[2]
     found = False
     for p in glob.os.listdir(app):
-        filename = os.path.join(app, p, 'distmeta.py')
-        if os.path.exists(filename):
-            found = filename
-            break
-        filename = os.path.join(app, p, '__init__.py')
-        if os.path.exists(filename):
-            found = filename
-            break
+        if p not in ['testproj', 'example']:
+            filename = os.path.join(app, p, 'distmeta.py')
+            if os.path.exists(filename):
+                found = filename
+                break
+            filename = os.path.join(app, p, '__init__.py')
+            if os.path.exists(filename):
+                found = filename
+                break
 
     if not found:
         print "__init__.py or distmeta.py file not found"
