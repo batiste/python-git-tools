@@ -1,90 +1,108 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import glob
 import sys
 import os
-syntax = """Syntax: python git.py [commit|push|pull|status|new_package|list_repos] \"[your message|package name]\""""
-
-if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print syntax
-    exit(0)
-
-if sys.argv[1] not in ("commit", "push", "pull", "status", "diff", "list_repos", "new_package"):
-    print syntax
-
-dir_msg = "--- In directory : %s"
-
-if sys.argv[1] == 'commit':
-    if len(sys.argv) < 3:
-        print "You need to provide a message for your commit"
-        print syntax
-        exit(0)
-    commit_cmd = "cd %s; git commit -a -m \"%s\"; cd .. "
-    for dirname in glob.glob('*'):
-        print dir_msg % dirname
-        os.system(commit_cmd % (dirname, sys.argv[2]))
-
-if sys.argv[1] == 'pull':
-    commit_cmd = "cd %s; git pull; cd .. "
-    for dirname in glob.glob('*'):
-        print dir_msg % dirname
-        os.system(commit_cmd % (dirname))
-
-if sys.argv[1] == 'push':
-    commit_cmd = "cd %s; git push; cd .. "
-    for dirname in glob.glob('*'):
-        print dir_msg % dirname
-        os.system(commit_cmd % (dirname))
-
-if sys.argv[1] == 'status':
-    commit_cmd = "cd %s; git status; cd .. "
-    for dirname in glob.glob('*'):
-        print dir_msg % dirname
-        os.system(commit_cmd % (dirname))
+from glob import glob
+from inspect import getargspec
 
 
-if sys.argv[1] == 'diff':
-    commit_cmd = "cd %s; git diff; cd .. "
-    for dirname in glob.glob('*'):
-        if dirname.find('.') == -1:
-            print dir_msg % dirname
-            os.system(commit_cmd % (dirname))
+class NoSuchCommandError(Exception):
+    """The command does not exist."""
 
-if sys.argv[1] == 'list_repos':
-    for filename in glob.glob('*/.git/config'):
+
+class ArgumentError(Exception):
+    """Error parsing command arguments."""
+
+
+def shell_quote(arguments):
+
+    def quote(string):
+        return "\\'".join("'" + p + "'" for p in string.split("'"))
+
+    return " ".join(map(quote, arguments))
+
+
+def system(*arguments):
+    return os.system(shell_quote(arguments))
+
+
+def validate_arguments(fun, args, name=None):
+    name = name or fun.__name__
+    argspec = getargspec(fun)[0]
+    if len(args) < len(argspec):
+        raise ArgumentError("Missing arguments for %s: %s" % (
+                name, ", ".join(argspec[len(args):])))
+
+
+def with_dir(dirname, fun):
+    cwd = os.getcwd()
+    try:
+        print("--- In directory: %s" % dirname)
+        os.chdir(dirname)
+        fun()
+    finally:
+        os.chdir(cwd)
+
+
+def with_all_dirs(fun):
+    [with_dir(dirname, lambda: fun(dirname))
+        for dirname in glob("*")
+            if os.path.isdir(dirname)]
+
+
+def with_repos(*shell_eval):
+    """Execute an arbitrary shell command for all reposistories."""
+    with_all_dirs(lambda dirname: system(*shell_eval))
+
+
+def create_simple_git_command(command):
+    def _git_x():
+        with_all_dirs(lambda dirname: system("git", command))
+    _git_x.__name__ = command
+    _git_x.__doc__ = "Run git %s for all repositories" % command
+    return _git_x
+
+
+def list_repos():
+    """List repository urls for all repositories."""
+    def _get_repo_url_from_config(filename):
         fh = open(filename, 'r')
-        for line in fh:
-            if line.strip().startswith('url'):
-                print line.split('=')[1].strip()
+        urls = [line.split("=")[1].strip()
+                        for line in fh
+                            if line.strip().startswith("url")]
+        print("\n".join(urls))
 
-if sys.argv[1] == 'new_package':
-    import re
-    app = sys.argv[2]
-    found = False
-    for p in glob.os.listdir(app):
-        if p not in ['testproj', 'example']:
+    [_get_repo_url_from_config(filename)
+        for filename in glob('*/.git/config')]
+
+
+def find_distmeta_file(app):
+    for p in os.listdir(app):
+        if p not in ('testproj', 'example'):
             filename = os.path.join(app, p, 'distmeta.py')
             if os.path.exists(filename):
-                found = filename
-                break
+                return filename
             filename = os.path.join(app, p, '__init__.py')
             if os.path.exists(filename):
-                found = filename
-                break
+                return filename
 
-    if not found:
-        print "__init__.py or distmeta.py file not found"
-        exit(0)
+
+def new_package(repo_name):
+    """Bump version and upload new package to chishop."""
+    import re
+
+    filename = find_distmeta_file(app)
+    if not filename:
+        raise RuntimeError("__init__.py or distmeta.py file not found")
 
     fh = open(filename, 'r')
     content = fh.read()
     fh.close()
-    import re
     version = r'VERSION = \((\d+), (\d+), (\d+)\)'
     search_result = re.search(version, content)
     if not search_result:
-        print "Regexp %s didn't match anything in file %s" % (version, filename)
-        exit(0)
+        raise RuntimeError("Regexp %s didn't match anything in file %s" % (
+                version, filename))
     minor_version_number = int(search_result.group(3)) + 1
     new_version = 'VERSION = (%d, %d, %d)' % (
         int(search_result.group(1)),
@@ -95,11 +113,68 @@ if sys.argv[1] == 'new_package':
     fh = open(filename, 'w')
     fh.write(new_content)
     fh.close()
-    print "Version number increased; commit changes"
-    commit_cmd = "cd %s; git commit -a -m \"New %s\"; git tag \"%s\"; git push; cd .." % (
-        app, new_version.lower(), new_version.lower().replace(' ', ''),
-    )
-    os.system(commit_cmd)
-    print "Upload the new package"
-    upload_cmd = "cd %s; python setup.py sdist upload -r chishop; cd .." % (app)
-    os.system(upload_cmd)
+    print("Version number bumped; commiting changes")
+    def commit_and_tag():
+        system("git", "commit", "-a", "-m", "New version %s" % (
+            new_version.lower()))
+        system("git", "tag", new_version.lower().replace(' ', ''))
+    with_dir(app, commit_and_tag)
+
+    print("Uploading new package")
+    def upload_package():
+        system("python", "setup.py", "sdist", "upload", "-r", "chishop")
+    with_dir(app, upload_package)
+
+
+def commit(message):
+    """Commit changes in all repositories."""
+    commit_cmd = """git commit -a -m "%s" """
+    with_all_dirs(lambda dirname: os.system(commit_cmd % message))
+
+
+commands = {
+    "commit": commit,
+    "pull": create_simple_git_command("pull"),
+    "push": create_simple_git_command("push"),
+    "status": create_simple_git_command("status"),
+    "diff": create_simple_git_command("diff"),
+    "with_repos": with_repos,
+    "list_repos": list_repos,
+    "new_package": new_package,
+}
+
+def usage(syntax):
+    sys.stderr.write(syntax + "\n")
+    exit(0)
+
+
+def help(command_name):
+    command = commands[command_name]
+    sys.stderr.write("Usage: %s %s\n\n%s\n" % (
+        command_name,
+        " ".join("<%s>" % arg
+                    for arg in getargspec(command)[0]),
+        command.__doc__))
+commands["help"] = help
+
+
+def main(*args):
+    syntax = """Syntax: %s [%s] [command arguments]""" % (
+        os.path.basename(args[0]), "|".join(commands.keys()))
+    len(args) < 2 and usage(syntax)
+
+    program_name, command_name = args[:2]
+    arguments = args[2:]
+
+    try:
+        fun = commands[command_name]
+    except KeyError:
+        raise NoSuchCommandError("No such command: %s" % command_name)
+
+    validate_arguments(fun, arguments, name=command_name)
+
+    result = fun(*arguments)
+
+
+if __name__ == "__main__":
+    main(*sys.argv)
