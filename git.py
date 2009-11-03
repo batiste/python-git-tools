@@ -90,8 +90,7 @@ def find_distmeta_file(app):
 def new_package(repo_name):
     """Bump version and upload new package to chishop."""
     import re
-
-    filename = find_distmeta_file(app)
+    filename = find_distmeta_file(repo_name)
     if not filename:
         raise RuntimeError("__init__.py or distmeta.py file not found")
 
@@ -118,12 +117,12 @@ def new_package(repo_name):
         system("git", "commit", "-a", "-m", "New version %s" % (
             new_version.lower()))
         system("git", "tag", new_version.lower().replace(' ', ''))
-    with_dir(app, commit_and_tag)
+    with_dir(repo_name, commit_and_tag)
 
     print("Uploading new package")
     def upload_package():
         system("python", "setup.py", "sdist", "upload", "-r", "chishop")
-    with_dir(app, upload_package)
+    with_dir(repo_name, upload_package)
 
 
 def commit(message):
