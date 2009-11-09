@@ -108,6 +108,11 @@ def new_package(repo_name):
         int(search_result.group(2)),
         minor_version_number
     )
+    tag_name = 'v%d.%d.%d' % (
+        int(search_result.group(1)),
+        int(search_result.group(2)),
+        minor_version_number
+    )
     new_content = re.sub(version, new_version, content)
     fh = open(filename, 'w')
     fh.write(new_content)
@@ -116,7 +121,8 @@ def new_package(repo_name):
     def commit_and_tag():
         system("git", "commit", "-a", "-m", "New version %s" % (
             new_version.lower()))
-        system("git", "tag", new_version.lower().replace(' ', ''))
+        system("git", "tag", tag_name)
+        system("git", "push", '--tags')
     with_dir(repo_name, commit_and_tag)
 
     print("Uploading new package")
