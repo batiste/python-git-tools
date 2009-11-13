@@ -120,6 +120,7 @@ def new_package(repo_name):
     def commit_and_tag():
         system("git", "commit", "-a", "-m", "New version %s" % (
             new_version.lower()))
+        system("git", "push")
         system("git", "tag", tag_name)
         system("git", "push", '--tags')
     with_dir(repo_name, commit_and_tag)
