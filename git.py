@@ -73,7 +73,7 @@ def get_repo_url_from_config(filename):
 def list_repos():
     """List repository urls for all repositories."""
     for filename in glob('*/.git/config'):
-        print "\n".join(get_repo_url_from_config(filename))
+        print("\n".join(get_repo_url_from_config(filename)))
 
 def find_distmeta_file(app):
     for p in os.listdir(app):
@@ -127,7 +127,6 @@ def new_package(repo_name):
     urls = get_repo_url_from_config(os.path.join(repo_name, '.git/config'))
     def clone_package():
         print("Checkout the repository in /tmp/")
-        print urls[0]
         system("git", "clone", urls[0], 'new_package')
         def upload_package():
             print("Uploading new package")
