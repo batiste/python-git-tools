@@ -63,18 +63,17 @@ def create_simple_git_command(command):
     return _git_x
 
 
+def get_repo_url_from_config(filename):
+    fh = open(filename, 'r')
+    urls = [line.split("=")[1].strip()
+                    for line in fh
+                        if line.strip().startswith("url")]
+    return urls
+
 def list_repos():
     """List repository urls for all repositories."""
-    def _get_repo_url_from_config(filename):
-        fh = open(filename, 'r')
-        urls = [line.split("=")[1].strip()
-                        for line in fh
-                            if line.strip().startswith("url")]
-        print("\n".join(urls))
-
-    [_get_repo_url_from_config(filename)
-        for filename in glob('*/.git/config')]
-
+    for filename in glob('*/.git/config'):
+        print "\n".join(get_repo_url_from_config(filename))
 
 def find_distmeta_file(app):
     for p in os.listdir(app):
@@ -125,11 +124,18 @@ def new_package(repo_name):
         system("git", "push", '--tags')
     with_dir(repo_name, commit_and_tag)
 
-    print("Uploading new package")
-    def upload_package():
-        system("python", "setup.py", "sdist", "upload", "-r", "chishop")
-    with_dir(repo_name, upload_package)
-
+    urls = get_repo_url_from_config(os.path.join(repo_name, '.git/config'))
+    def clone_package():
+        print("Checkout the repository in /tmp/")
+        print urls[0]
+        system("git", "clone", urls[0], 'new_package')
+        def upload_package():
+            print("Uploading new package")
+            system("python", "setup.py", "sdist", "upload", "-r", "chishop")
+        with_dir("new_package", upload_package)
+        system("rm", "-Rf", "new_package")
+    with_dir("/tmp/", clone_package)
+    print("Done.")
 
 def commit(message):
     """Commit changes in all repositories."""
