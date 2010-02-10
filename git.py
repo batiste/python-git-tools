@@ -159,13 +159,14 @@ def usage(syntax):
     exit(0)
 
 
-def help(command_name):
-    command = commands[command_name]
-    sys.stderr.write("Usage: %s %s\n\n%s\n" % (
-        command_name,
-        " ".join("<%s>" % arg
-                    for arg in getargspec(command)[0]),
-        command.__doc__))
+def help(command_name=None):
+    if command_name:
+        command = commands[command_name]
+        sys.stderr.write("Usage: %s %s\n\n%s\n" % (
+            command_name,
+            " ".join("<%s>" % arg
+                        for arg in getargspec(command)[0]),
+            command.__doc__))
 commands["help"] = help
 
 
