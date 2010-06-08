@@ -77,7 +77,7 @@ def list_repos():
 
 def find_distmeta_file(app):
     for p in os.listdir(app):
-        if p not in ('testproj', 'example', 'tests'):
+        if p not in ('testproj', 'example', 'tests', 'test'):
             filename = os.path.join(app, p, 'distmeta.py')
             if os.path.exists(filename):
                 return filename
