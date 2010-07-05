@@ -4,7 +4,7 @@ import sys
 import os
 from glob import glob
 from inspect import getargspec
-
+from subprocess import Popen, PIPE
 
 class NoSuchCommandError(Exception):
     """The command does not exist."""
@@ -23,7 +23,13 @@ def shell_quote(arguments):
 
 
 def system(*arguments):
-    return os.system(shell_quote(arguments))
+    proc = Popen(arguments, stdout=PIPE, stderr=PIPE)
+    return_code = proc.wait()
+    if return_code == 0:
+        return proc.stdout.read()
+    else:
+        raise RuntimeError('System command returned an error: ' % str(arguments))
+
 
 
 def validate_arguments(fun, args, name=None):
@@ -36,12 +42,14 @@ def validate_arguments(fun, args, name=None):
 
 def with_dir(dirname, fun):
     cwd = os.getcwd()
+    result = None
     try:
         print("--- In directory: %s" % dirname)
         os.chdir(dirname)
-        fun()
+        result = fun()
     finally:
         os.chdir(cwd)
+    return result
 
 
 def with_all_dirs(fun):
@@ -75,32 +83,43 @@ def list_repos():
     for filename in glob('*/.git/config'):
         print("\n".join(get_repo_url_from_config(filename)))
 
-def find_distmeta_file(app):
+
+
+def find_distmeta_files(app):
+    files = []
     for p in os.listdir(app):
         if p not in ('testproj', 'example', 'tests', 'test'):
             filename = os.path.join(app, p, 'distmeta.py')
             if os.path.exists(filename):
-                return filename
+                files.append(filename)
             filename = os.path.join(app, p, '__init__.py')
             if os.path.exists(filename):
-                return filename
+                files.append(filename)
+    return files
 
 
 def new_package(repo_name):
     """Bump version and upload new package to chishop."""
+    
     import re
-    filename = find_distmeta_file(repo_name)
-    if not filename:
-        raise RuntimeError("__init__.py or distmeta.py file not found")
-
-    fh = open(filename, 'r')
-    content = fh.read()
-    fh.close()
     version = r'VERSION = \((\d+), (\d+), (\d+)\)'
-    search_result = re.search(version, content)
-    if not search_result:
-        raise RuntimeError("Regexp %s didn't match anything in file %s" % (
-                version, filename))
+    
+    filenames = find_distmeta_files(repo_name)
+    if not filenames:
+        raise RuntimeError("__init__.py or distmeta.py files not found")
+
+    filename = None
+    for filename in filenames:
+        fh = open(filename, 'r')
+        content = fh.read()
+        fh.close()
+        search_result = re.search(version, content)
+        if search_result:
+            break
+    else:
+        raise RuntimeError("Regexp %s didn't match anything in files %s" % (
+                version, str(filenames)))
+
     minor_version_number = int(search_result.group(3)) + 1
     new_version = 'VERSION = (%d, %d, %d)' % (
         int(search_result.group(1)),
@@ -116,7 +135,7 @@ def new_package(repo_name):
     fh = open(filename, 'w')
     fh.write(new_content)
     fh.close()
-    print("Version number bumped; commiting changes")
+    print("Version number bumped; commiting changes (%s)" % tag_name)
     def commit_and_tag():
         system("git", "commit", "-a", "-m", "New version %s" % (
             new_version.lower()))
