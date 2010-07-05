@@ -32,6 +32,6 @@ To push all you repositories::
 
     python git.py push
 
-To bump version, commit and push the change and upload a new package for a particular repository::
+To bump version, commit and push the change and upload a new package for a particular pypi server::
 
-    python git.py new_package <repository name>
+    python git.py new_package <server name>
