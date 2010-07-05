@@ -35,7 +35,8 @@ def system(*arguments):
 def validate_arguments(fun, args, name=None):
     name = name or fun.__name__
     argspec = getargspec(fun)[0]
-    if len(args) < len(argspec):
+    defaults = getargspec(fun)[3]
+    if len(args) < (len(argspec) - len(defaults)):
         raise ArgumentError("Missing arguments for %s: %s" % (
                 name, ", ".join(argspec[len(args):])))
 
@@ -98,7 +99,7 @@ def find_distmeta_files(app):
     return files
 
 
-def new_package(repo_name):
+def new_package(repo_name, server='chishop'):
     """Bump version and upload new package to chishop."""
     
     import re
@@ -149,8 +150,8 @@ def new_package(repo_name):
         print("Checkout the repository in /tmp/")
         system("git", "clone", urls[0], 'new_package')
         def upload_package():
-            print("Uploading new package")
-            system("python", "setup.py", "sdist", "upload", "-r", "chishop")
+            print("Uploading new package to %s" % server)
+            system("python", "setup.py", "sdist", "upload", "-r", server)
         with_dir("new_package", upload_package)
         system("rm", "-Rf", "new_package")
     with_dir("/tmp/", clone_package)
