@@ -39,7 +39,11 @@ def validate_arguments(fun, args, name=None):
     name = name or fun.__name__
     argspec = getargspec(fun)[0]
     defaults = getargspec(fun)[3]
-    if len(args) < (len(argspec) - len(defaults)):
+    if defaults is None:
+        num_def = 0
+    else:
+        num_def = len(defaults)
+    if len(args) < (len(argspec) - num_def):
         raise ArgumentError("Missing arguments for %s: %s" % (
                 name, ", ".join(argspec[len(args):])))
 
@@ -165,6 +169,11 @@ def commit(message):
     commit_cmd = """git commit -a -m "%s" """
     with_all_dirs(lambda dirname: os.system(commit_cmd % message))
 
+def checkout(branch):
+    """Try to checkout a branch on all repositories."""
+    checkout_cmd = """git checkout "%s" """
+    with_all_dirs(lambda dirname: os.system(checkout_cmd % branch))
+
 
 commands = {
     "commit": commit,
@@ -172,6 +181,7 @@ commands = {
     "push": create_simple_git_command("push"),
     "status": create_simple_git_command("status"),
     "diff": create_simple_git_command("diff"),
+    "checkout":checkout,
     "with_repos": with_repos,
     "list_repos": list_repos,
     "new_package": new_package,
