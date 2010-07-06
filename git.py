@@ -23,12 +23,15 @@ def shell_quote(arguments):
 
 
 def system(*arguments):
-    proc = Popen(arguments, stdout=PIPE, stderr=PIPE)
+    return os.system(shell_quote(arguments))
+
+    
+    proc = Popen(shell_quote(arguments), stdout=PIPE, stderr=PIPE)
     return_code = proc.wait()
     if return_code == 0:
         return proc.stdout.read()
     else:
-        raise RuntimeError('System command returned an error: ' % str(arguments))
+        raise RuntimeError('System command returned an error')
 
 
 
