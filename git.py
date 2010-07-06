@@ -174,6 +174,10 @@ def checkout(branch):
     checkout_cmd = """git checkout "%s" """
     with_all_dirs(lambda dirname: os.system(checkout_cmd % branch))
 
+def branch(branch_name):
+    """Try to create a branch on all repositories."""
+    branch_cmd = """git branch "%s" """
+    with_all_dirs(lambda dirname: os.system(branch_cmd % branch_name))
 
 commands = {
     "commit": commit,
@@ -182,6 +186,7 @@ commands = {
     "status": create_simple_git_command("status"),
     "diff": create_simple_git_command("diff"),
     "checkout":checkout,
+    "branch":branch,
     "with_repos": with_repos,
     "list_repos": list_repos,
     "new_package": new_package,
