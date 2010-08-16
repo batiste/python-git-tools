@@ -4,7 +4,7 @@ import sys
 import os
 from glob import glob
 from inspect import getargspec
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 class NoSuchCommandError(Exception):
     """The command does not exist."""
@@ -25,7 +25,6 @@ def shell_quote(arguments):
 def system(*arguments):
     return os.system(shell_quote(arguments))
 
-    
     proc = Popen(shell_quote(arguments), stdout=PIPE, stderr=PIPE)
     return_code = proc.wait()
     if return_code == 0:
@@ -33,6 +32,9 @@ def system(*arguments):
     else:
         raise RuntimeError('System command returned an error')
 
+def answer(*arguments):
+    proc = Popen(shell_quote(arguments), shell=True, stdout=PIPE)
+    return proc.stdout.readlines()
 
 
 def validate_arguments(fun, args, name=None):
@@ -116,6 +118,12 @@ def new_package(repo_name, server='chishop'):
     if not filenames:
         raise RuntimeError("__init__.py or distmeta.py files not found")
 
+    def get_current_branch():
+        return answer("git", "branch")[-1:][0][1:].strip()
+    current_branch = with_dir(repo_name, get_current_branch)
+
+    print("Current branch name is (%s)" % current_branch)
+
     filename = None
     for filename in filenames:
         fh = open(filename, 'r')
@@ -157,6 +165,7 @@ def new_package(repo_name, server='chishop'):
         print("Checkout the repository in /tmp/")
         system("git", "clone", urls[0], 'new_package')
         def upload_package():
+            system("git", "checkout", current_branch)
             print("Uploading new package to %s" % server)
             system("python", "setup.py", "sdist", "upload", "-r", server)
         with_dir("new_package", upload_package)
