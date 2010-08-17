@@ -119,10 +119,17 @@ def new_package(repo_name, server='chishop'):
         raise RuntimeError("__init__.py or distmeta.py files not found")
 
     def get_current_branch():
-        return answer("git", "branch")[-1:][0][1:].strip()
-    current_branch = with_dir(repo_name, get_current_branch)
+        result = answer("git", "branch")
+        for branch in result:
+            if branch.strip().startswith('*'):
+                return branch.strip()[1:].strip()
+        return None
 
-    print("Current branch name is (%s)" % current_branch)
+    current_branch = with_dir(repo_name, get_current_branch)
+    if not current_branch:
+        raise RuntimeError("Coudn't find current branch on the repository %s" % repo_name)
+    else:
+        print("Current branch name is (%s)" % current_branch)
 
     filename = None
     for filename in filenames:
