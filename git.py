@@ -110,10 +110,10 @@ def find_distmeta_files(app):
 
 def new_package(repo_name, server='chishop'):
     """Bump version and upload new package to chishop."""
-    
+
     import re
     version = r'VERSION = \((\d+), (\d+), (\d+)\)'
-    
+
     filenames = find_distmeta_files(repo_name)
     if not filenames:
         raise RuntimeError("__init__.py or distmeta.py files not found")
@@ -195,6 +195,17 @@ def branch(branch_name):
     branch_cmd = """git branch "%s" """
     with_all_dirs(lambda dirname: os.system(branch_cmd % branch_name))
 
+def compile_messages():
+    def tata():
+        system("django-admin.py", "compilemessages")
+    def test(dirname):
+        for path in os.listdir('.'):
+            if os.path.isdir(path):
+                with_dir(path, tata)
+
+    with_all_dirs(test)
+
+
 commands = {
     "commit": commit,
     "pull": create_simple_git_command("pull"),
@@ -206,6 +217,7 @@ commands = {
     "with_repos": with_repos,
     "list_repos": list_repos,
     "new_package": new_package,
+    "compile_messages": compile_messages,
 }
 
 def usage(syntax):
