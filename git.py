@@ -195,6 +195,17 @@ def branch(branch_name):
     branch_cmd = """git branch "%s" """
     with_all_dirs(lambda dirname: os.system(branch_cmd % branch_name))
 
+def add(filename):
+    """Try to add a file to all repositories."""
+    add_cmd = """git add "%s" """
+    def add():
+        os.system(add_cmd % filename)
+    def test(dirname):
+        for path in os.listdir('.'):
+            if os.path.isdir(path) and os.path.exists(path+'/models.py'):
+                with_dir(path, add)
+    with_all_dirs(test)
+
 def compile_messages():
     """Stupid brut force methods to compile messages."""
 
@@ -231,6 +242,7 @@ commands = {
     "push": create_simple_git_command("push"),
     "status": create_simple_git_command("status"),
     "diff": create_simple_git_command("diff"),
+    "add": add,
     "checkout":checkout,
     "branch":branch,
     "with_repos": with_repos,
