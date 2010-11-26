@@ -196,15 +196,34 @@ def branch(branch_name):
     with_all_dirs(lambda dirname: os.system(branch_cmd % branch_name))
 
 def compile_messages():
-    def tata():
+    """Stupid brut force methods to compile messages."""
+
+    def comp():
         system("django-admin.py", "compilemessages")
     def test(dirname):
         for path in os.listdir('.'):
-            if os.path.isdir(path):
-                with_dir(path, tata)
+            if os.path.isdir(path) and os.path.exists(path+'/models.py'):
+                with_dir(path, comp)
 
     with_all_dirs(test)
 
+
+def make_messages(lang=False):
+    """Stupid brut force methods to generate messages."""
+
+    def make():
+        if lang:
+            system("django-admin.py", "makemessages", "-l", lang)
+            system("django-admin.py", "makemessages", "-d", "djangojs", "-l", lang)
+        else:
+            system("django-admin.py", "makemessages", "-a")
+            system("django-admin.py", "makemessages", "-d", "djangojs", "-a")
+    def test(dirname):
+        for path in os.listdir('.'):
+            if os.path.isdir(path) and os.path.exists(path+'/models.py'):
+                with_dir(path, make)
+
+    with_all_dirs(test)
 
 commands = {
     "commit": commit,
@@ -218,6 +237,7 @@ commands = {
     "list_repos": list_repos,
     "new_package": new_package,
     "compile_messages": compile_messages,
+    "make_messages":make_messages,
 }
 
 def usage(syntax):
