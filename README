@@ -32,6 +32,21 @@ To push all you repositories::
 
     python git.py push
 
-To bump version, commit and push the change and upload a new package for a particular pypi server::
+To bump version, commit and push the change and upload a new package for a particular pypi server (by default chishop is used)::
 
     python git.py new_package <server name>
+
+
+Other functions
+=============================
+
+Self explanatory::
+
+    python git.py checkout <branch>
+    python git.py add <filename>
+    python git.py list_repos
+    python git.py status
+
+    python git.py compile_messages
+    python git.py make_messages
+
