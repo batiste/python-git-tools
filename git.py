@@ -6,6 +6,10 @@ from glob import glob
 from inspect import getargspec
 from subprocess import Popen, PIPE, STDOUT
 
+# usefull to retain the proper version
+# on system that have several python versions
+python_exe = sys.executable
+
 class NoSuchCommandError(Exception):
     """The command does not exist."""
 
@@ -174,7 +178,7 @@ def new_package(repo_name, server='chishop'):
         def upload_package():
             system("git", "checkout", current_branch)
             print("Uploading new package to %s" % server)
-            system("python", "setup.py", "sdist", "upload", "-r", server)
+            system(python_exe, "setup.py", "sdist", "upload", "-r", server)
         with_dir("new_package", upload_package)
         system("rm", "-Rf", "new_package")
     with_dir("/tmp/", clone_package)
